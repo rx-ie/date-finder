@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""
+week_friday.py
+
+Given the list of weeks from your calendar, this module can tell you the
+date of a particular weekday in each week.  The default weekday is Friday,
+but you can ask for any day of the week.
+
+Typical usage
+-------------
+    from week_friday import friday_dates, dates_for_weekday
+
+    # All Fridays
+    for d in friday_dates():
+        print(d)                     # 2026-01-16, 2026-01-23, ...
+
+    # All Tuesdays
+    for d in dates_for_weekday("Tue"):
+        print(d)
+"""
+
+import datetime
+from typing import List, Iterable
+
+# ----------------------------------------------------------------------
+# Raw schedule – start and end strings exactly as they appear
+# ----------------------------------------------------------------------
+WEEK_SCHEDULE: List[tuple[str, str]] = [
+    ("Mon, 12 Jan 2026", "Fri, 16 Jan 2026"),
+    ("Mon, 19 Jan 2026", "Fri, 23 Jan 2026"),
+    ("Mon, 26 Jan 2026", "Fri, 30 Jan 2026"),
+    ("Mon, 2 Feb 2026", "Fri, 6 Feb 2026"),
+    ("Mon, 9 Feb 2026", "Fri, 13 Feb 2026"),
+    ("Mon, 16 Feb 2026", "Fri, 20 Feb 2026"),
+    ("Sat, 21 Feb 2026", "Sun, 1 Mar 2026"),
+    ("Mon, 2 Mar 2026", "Sat, 7 Mar 2026"),
+    ("Mon, 9 Mar 2026", "Fri, 13 Mar 2026"),
+    ("Mon, 16 Mar 2026", "Fri, 20 Mar 2026"),
+    ("Mon, 23 Mar 2026", "Fri, 27 Mar 2026"),
+    ("Mon, 30 Mar 2026", "Fri, 3 Apr 2026"),
+    ("Mon, 6 Apr 2026", "Fri, 10 Apr 2026"),
+    ("Mon, 13 Apr 2026", "Fri, 17 Apr 2026"),
+    ("Sat, 18 Apr 2026", "Fri, 24 Apr 2026"),
+]
+
+DATE_FMT = "%a, %d %b %Y"          # e.g. "Mon, 12 Jan 2026"
+
+def _parse(date_str: str) -> datetime.date:
+    return datetime.datetime.strptime(date_str, DATE_FMT).date()
+
+# Pre‑parsed schedule: list of (start_date, end_date)
+_PARSED = [( _parse(start), _parse(end) ) for start, end in WEEK_SCHEDULE]
+
+# ----------------------------------------------------------------------
+# Public helpers
+# ----------------------------------------------------------------------
+def dates_for_weekday(weekday: str) -> List[datetime.date]:
+    """
+    Return a list with the date of *weekday* for every week in the schedule.
+
+    Parameters
+    ----------
+    weekday : str
+        Short name of the day, e.g. "Mon", "Tue", … "Sun".
+
+    Returns
+    -------
+    List[datetime.date]
+        Chronologically ordered dates, one per week.
+    """
+    # Map short names to Python's 0‑6 weekday numbers (Mon=0 … Sun=6)
+    weekday_map = {
+        "Mon": 0, "Tue": 1, "Wed": 2, "Thu": 3,
+        "Fri": 4, "Sat": 5, "Sun": 6
+    }
+    target = weekday_map[weekday]
+
+    result = []
+    for start, end in _PARSED:
+        # Walk forward from start until we hit the wanted weekday
+        delta = (target - start.weekday()) % 7
+        candidate = start + datetime.timedelta(days=delta)
+        # If the candidate falls outside the week, skip it (should not happen)
+        if candidate > end:
+            continue
+        result.append(candidate)
+    return result
+
+def friday_dates() -> List[datetime.date]:
+    """Convenient shortcut that returns every Friday."""
+    return dates_for_weekday("Fri")
+
+# ----------------------------------------------------------------------
+# Simple demo when run as a script
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    print("Fridays for all weeks:")
+    for d in friday_dates():
+        print(d.isoformat())
+        
